@@ -1,0 +1,62 @@
+version: '2'
+services:
+
+  app:
+    build: .
+    networks:
+      - compro_net
+    env_file:
+      - .env  
+    depends_on:
+      - netcompro
+    ports:
+         - "8090:8090"
+    expose: 
+      - '8090'
+
+  composer_compro:
+    container_name: composer_compro
+    image: composer
+    volumes:
+      - .:/app
+    command: composer update --ignore-platform-reqs
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - 8005:80
+    depends_on:
+      - netcompro
+      - app
+    volumes:
+      - ./:/var/www
+      - ./docker-compose/nginx:/etc/nginx/conf.d/
+    networks:
+      - compro_net
+
+  netcompro:
+    image: mysql:5.6
+    environment:
+        MYSQL_DATABASE: compro
+        MYSQL_USER: compro
+        MYSQL_PASSWORD: compro
+        MYSQL_ROOT_PASSWORD: compro
+    expose: 
+      - '3306'  
+    networks:
+      - compro_net 
+    volumes:
+      - dbcompro:/var/lib/mysql  
+    healthcheck:
+            test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+            timeout: 20s
+            retries: 10  
+    ports:
+        - "3306:3306"   
+
+volumes:
+  dbcompro:
+
+networks:
+  compro_net:
+    driver: bridge
